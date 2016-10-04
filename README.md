@@ -1,11 +1,11 @@
-# tls-parser
+# tls-parser [![Build Status](https://travis-ci.org/bayotop/tls-parser.svg?branch=master)](https://travis-ci.org/bayotop/tls-parser)
 
 Tested only on GNU/Linux (RHEL 6.8). Might need some minor codechanges on other systems (especially Windows).
 
 Compilation
 
 ```
-gcc -o tls-parser tls_parser.c tls_parser.h
+gcc -o tls-parser tls_parser.*
 ```
 
 Usage
