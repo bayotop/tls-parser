@@ -11,7 +11,7 @@ gcc -o tls-parser tls_parser.c tls_parser.h
 Usage
 
 ```
-./tls-parser <TLS MESSAGE>
+./tls-parser <PATH_TO_TLS_MESSAGE>
 ```
 
 Examples
