@@ -7,7 +7,6 @@
 #define INVALID_FILE_LENGTH 1
 #define INVALID_CONTENT_TYPE 2
 #define INVALID_VERSION 3
-#define UNSUPPORTED_HANDSHAKE_MESSAGE_TYPE 4
 
 typedef struct {
     uint8_t major;
@@ -81,3 +80,4 @@ int parse_certificate(unsigned char *message, uint16_t size);
 int parse_server_key_exchange(unsigned char *message, uint16_t size);
 int parse_server_hello_done(unsigned char *message, uint16_t size);
 int parse_client_key_exchange(unsigned char *message, uint16_t size);
+void handle_errors(int error_code);

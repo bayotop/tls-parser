@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
     if (stream == NULL) {
         printf("The file '%s' couldn't be opened.\n", argv[1]);
 
-        return 1;
+        return 0;
     }
 
     // Get the actual file length
@@ -46,11 +46,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Stop processing in case there was an error
-    if (err != 0) {
-        printf("There was an issue parsing this file. The issue is either malfored or not supported.\n");
-
-        return err;
-    }
+    handle_errors(err);
 
     print_tls_record_layer_info(&tls_message);
 
@@ -70,14 +66,10 @@ int main(int argc, char* argv[]) {
             err = parse_client_key_exchange(tls_message.body, tls_message.mLength); break;
         default:
             printf("Unsupported handshake message type.\n");
-            return UNSUPPORTED_HANDSHAKE_MESSAGE_TYPE;
+            return 0;
     }
 
-    if (err != 0) {
-        printf("There was an issue parsing this file. The issue is either malfored or not supported.\n");
-
-        return err;
-    }
+    handle_errors(err);
 
     printf("\nSuccesfully finished parsing of message!\n");
 
@@ -202,4 +194,23 @@ int parse_client_key_exchange(unsigned char *message, uint16_t size) {
     // Not implemented yet
     printf("16\n");
     return 0;
+}
+
+void handle_errors(int error_code) {
+    if (!error_code) {
+        // In case there is no error, continue.
+        return;
+    }
+
+    printf("[ERROR]: ");
+
+    switch (error_code) {
+        case 1: printf("The lengths specified in the input file are not valid.\n"); break;
+        case 2: printf("The input file is not an TLS handshake message.\n"); break;
+        case 3: printf("The message is not of a supported version (TLS 1.0 - TLS 1.2).\n"); break;
+        default:
+            printf("Something truly unexpected happend.\n");
+    }
+
+    exit(0);
 }
