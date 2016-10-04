@@ -1,1 +1,4 @@
-script: gcc -o tls-parser src/*.* -Wall
+script: 
+  - gcc -o tls-parser src/*.* -Wall
+  - ./tls-parser examples/TLSv1.2/Certificate
+  - ./tls-parser examples/TLSv1.2/ServerHelloDone
