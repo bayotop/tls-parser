@@ -7,6 +7,7 @@
 #define INVALID_FILE_LENGTH 1
 #define INVALID_CONTENT_TYPE 2
 #define INVALID_VERSION 3
+#define UNSUPPORTED_HANDSHAKE_MESSAGE_TYPE 4
 
 typedef struct {
     uint8_t major;
