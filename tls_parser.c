@@ -1,5 +1,5 @@
 #include "tls_parser.h"
-
+#include <time.h>
 
 #define bytes_to_u16(MSB,LSB) (((unsigned int) ((unsigned char) MSB)) & 255)<<8 | (((unsigned char) LSB)&255)
 
@@ -118,6 +118,7 @@ int initialize_tls_structure(unsigned char *raw, int size, HandshakeMessage *tls
     	tls_message->version.minor = raw[2];
 
     	// Convert raw[3] and raw[4] to uint16_t number
+	printf("3 : %d 4 : %d\n",raw[3],raw[4]);
     	tls_message->fLength = (raw[3] << 8) + raw[4];
 
     	// Check if the sizes are correct (record protocol headers + length == file size)
@@ -162,14 +163,14 @@ void print_tls_record_layer_info(HandshakeMessage *tls_message) {
     	printf("Handshake message length: %d\n\n", tls_message->mLength);
 
     	// Uncomment for debugging purposes
-    	printf("Message raw data: \n\n");
+    	/*printf("Message raw data: \n\n");
 
     	int i;
     	for (i = 0; i < tls_message->mLength; i++) {
         	printf("0x%x ", tls_message->body[i]); 
     	}
 
-    	printf("\n");
+    	printf("\n");*/
 }
 
 
@@ -181,7 +182,8 @@ int parse_client_hello(unsigned char *message, uint16_t size) {// Implementation
 
 	printf("---------------RAW DATA FOR CODING HELP START---------------------\n");
     	for (int i = 0; i < size; i++) {
-        	printf("0x%x ", message[i]); 
+        	printf("(%d)0x%x\n", i,message[i]);
+		 
     	}
 	printf("\n---------------RAW DATA FOR CODING HELP END-----------------------\n");
 
@@ -193,8 +195,8 @@ int parse_client_hello(unsigned char *message, uint16_t size) {// Implementation
 
 	C_Hello.version.major = message[0];
 	C_Hello.version.minor = message[1];
-	printf("Identified the following TLS message version :\n");
-    	printf("TLS Version: ");
+	
+    	printf("TLS Client Hello Message Version (2 bytes): ");
 
     	switch (C_Hello.version.minor) {
         	case 0x01: printf("1.0\n"); break;
@@ -202,51 +204,73 @@ int parse_client_hello(unsigned char *message, uint16_t size) {// Implementation
         	case 0x03: printf("1.2\n"); break;
         	default: printf("unknown\n");
     	}
-    	printf("\n");
+    	
+	//Action on text 4 bytes are for timestamp-----------------
 
-	//Action on text 2 bytes for length-----------------
+	unsigned int timestamp[32];
 
-	unsigned int port = bytes_to_u16(message[2],message[3]);
-	C_Hello.mLength = port;
-
-	printf("Identified the following TLS message length :\n");
-	printf("TLS message length: %d\n", C_Hello.mLength);
-
-	//Action on one byte ie 01 for Clent Hello--------------------
-	if (message[3] != 0x01 ) {
-        	return INVALID_VERSION;
-    	}
-	else{
-		printf("This is a Client Hello TLS Message\n");
+	printf("The time stamp is (4 bytes) : ");
+	for(int i=2;i<=5;i++){
+		timestamp[i] = message[i];
+		printf("0x%2x ",timestamp[i]);
 	}
-
+	printf("\n");
 	
-	//Action on 3 bytes for length of fragment
-	C_Hello.fLength = (0x00 << 24) + (message[4] << 16) + (message[5] << 8) + message[6];
+
+	//Collect the random number of next 28 bytes
+
+	unsigned int random[28];
+
+	printf("The random number is (28 bytes) : ");
+	for(int i=6;i<=33;i++){
+		random[i] = message[i];
+		printf("0x%x ",random[i]);
+	}
+	printf("\n");
+	// Next is one byte session ID
 	
-	printf("Identified the following TLS Client Hello message length :\n");
-	printf("TLS message length: %d\n", C_Hello.fLength);
+	C_Hello.sessionID = message[34];
+	printf("The session ID is (1 byte) : %d\n", C_Hello.sessionID);
 
-	//Action on next two bytes for version------------
-	//Check if the versions are valid
-	if (message[7] != 0x03 || (message[8] != 0x01 && message[8] != 0x02 && message[8] != 0x03)) {
-        	return INVALID_VERSION;
-    	}
+	//Finding the cipher suite length next 2 bytes
 
-	C_Hello.mversion.major = message[7];
-	C_Hello.mversion.minor = message[8];
-	printf("Identified the following TLS message version :\n");
-    	printf("TLS Version: ");
+	//C_Hello.ciSuiteLength = (message[36] << 8) + message[37];
+	C_Hello.ciSuiteLength = (message[35] << 8) + message[36];
+	printf("The cipher suite length is (2 bytes) : %d\n", C_Hello.ciSuiteLength);
 
-    	switch (C_Hello.mversion.minor) {
-        	case 0x01: printf("1.0\n"); break;
-        	case 0x02: printf("1.1\n"); break;
-        	case 0x03: printf("1.2\n"); break;
-        	default: printf("unknown\n");
-    	}
-    	printf("\n");
+	//List the cipher suites
+	printf("Total No of cipher suits are : %d\n", (C_Hello.ciSuiteLength/2));
+	unsigned int cisuite[C_Hello.ciSuiteLength];
+	printf("The cipher suite codes are (each 2 bytes) : ");
+	for(int i=0;i<C_Hello.ciSuiteLength; i++){
+		cisuite[i] = message[i+37];
+		printf("%x ",cisuite[i]);
+	}
+	printf("\n");
+
+	//List the compression method lengths
+
+	C_Hello.compLength = message[36 + C_Hello.ciSuiteLength + 1]; // 71 for our test case
+	printf("The compression method length is (1 byte) : %d\n", C_Hello.compLength);
 	
-    	return 0;
+
+	// List the compresion methods (each 1 byte)
+
+	int startByteCompMethod = (36 + C_Hello.ciSuiteLength + 2);
+
+	unsigned int compMethod[C_Hello.compLength];
+	printf("The comp method codes are (each 1 bytes) : ");
+	for(int i=0;i<C_Hello.compLength; i++){
+		compMethod[i] = message[i + startByteCompMethod];
+		printf("%x  ",compMethod[i]);
+	}
+	printf("\n");
+
+	// Find the extension length
+	
+	C_Hello.extLength = (message[startByteCompMethod + C_Hello.compLength] << 8) + message[startByteCompMethod + C_Hello.compLength+1];
+	printf("The extension length is (2 bytes) : %d\n", C_Hello.extLength);
+	return 0;
 }
 
 int parse_server_hello(unsigned char *message, uint16_t size) {
