@@ -51,9 +51,10 @@ typedef struct {
 
 typedef struct { 
 	ProtocolVersion version;
-	ProtocolVersion mversion;
-    	unsigned int mLength;
-	unsigned int fLength;
+	unsigned int sessionID;
+	uint16_t ciSuiteLength;	
+    	unsigned int compLength;
+	unsigned int extLength;
     // RFC 5246 page 40
 } ClientHello;
 
