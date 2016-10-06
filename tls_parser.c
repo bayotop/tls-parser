@@ -180,12 +180,12 @@ int parse_client_hello(unsigned char *message, uint16_t size) {// Implementation
 	ClientHello C_Hello;
     	printf("THE DETAILS OF THE CLENT HELLO ARE AS UNDER :-\n");
 
-	printf("---------------RAW DATA FOR CODING HELP START---------------------\n");
+	/*printf("---------------RAW DATA FOR CODING HELP START---------------------\n");
     	for (int i = 0; i < size; i++) {
         	printf("(%d)0x%x\n", i,message[i]);
 		 
     	}
-	printf("\n---------------RAW DATA FOR CODING HELP END-----------------------\n");
+	printf("\n---------------RAW DATA FOR CODING HELP END-----------------------\n");*/
 
 	//Action on first two bytes for version------------
 	//Check if the versions are valid
