@@ -4,3 +4,4 @@ script:
   - ./tls-parser examples/TLSv1.2/ServerHelloDone
   - gcc -o tls_parser -std=c99 tls_parser.c 
   - ./tls_parser examples/TLSv1.0/ClientHello
+  - ./tls_parser examples/TLSv1.0/ServerHello
