@@ -211,20 +211,23 @@ int parse_client_hello(unsigned char *message, uint16_t size) {// Implementation
 
 	printf("The time stamp is (4 bytes) : ");
 	for(int i=2;i<=5;i++){
-		timestamp[i] = message[i];
-		printf("0x%2x ",timestamp[i]);
+		timestamp[i-2] = message[i];
+		printf("%d",timestamp[i]);
+	
 	}
 	printf("\n");
-	
 
+	
+	system ("date --date @$(printf '%d' 0x521dd201)");
+	
 	//Collect the random number of next 28 bytes
 
 	unsigned int random[28];
 
 	printf("The random number is (28 bytes) : ");
 	for(int i=6;i<=33;i++){
-		random[i] = message[i];
-		printf("0x%x ",random[i]);
+		random[i-6] = message[i];
+		printf("%x",random[i]);
 	}
 	printf("\n");
 	// Next is one byte session ID
