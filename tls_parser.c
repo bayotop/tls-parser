@@ -322,11 +322,6 @@ int parse_server_hello(unsigned char *message, uint16_t size) {
 	
 	}
 	
-	/*char receivedByte[12], *p;
-	sprintf(receivedByte, "0x%X%X%X%X", timestamp[0], timestamp[1], timestamp[2], timestamp[3]);
-   	int time = strtol(receivedByte, &p, 20);
-	printf("time :%d\n",time);*/
-
 	system ("date --date @$(printf '%d' 0x521dd201)");
 
 	printf("\n");
@@ -357,14 +352,7 @@ int parse_server_hello(unsigned char *message, uint16_t size) {
 	
 	//List the compression method lengths
 
-	//C_Hello.compLength = message[36 + C_Hello.ciSuiteLength + 1]; // 71 for our test case
-	//printf("The compression method length is (1 byte) : %d\n", C_Hello.compLength);
 	
-
-	// List the compresion methods (each 1 byte)
-
-	//int startByteCompMethod = (36 + C_Hello.ciSuiteLength + 2);
-
 	unsigned int compMethod[1];
 	compMethod[0] = message[37];
 	printf("The comp method code is (each 1 bytes) : %x\n",compMethod[0] );
