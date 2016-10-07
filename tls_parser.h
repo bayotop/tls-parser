@@ -59,6 +59,12 @@ typedef struct {
 } ClientHello;
 
 typedef struct {
+
+	ProtocolVersion version;
+	unsigned int sessionID;
+	uint16_t ciSuiteLength;	
+    	unsigned int compLength;
+	unsigned int extLength;
     // Not implemented yet
     // RFC 5246 page 41
 } ServerHello;

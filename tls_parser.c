@@ -215,10 +215,15 @@ int parse_client_hello(unsigned char *message, uint16_t size) {// Implementation
 		printf("%d",timestamp[i]);
 	
 	}
-	printf("\n");
-
 	
+	/*char receivedByte[12], *p;
+	sprintf(receivedByte, "0x%X%X%X%X", timestamp[0], timestamp[1], timestamp[2], timestamp[3]);
+   	int time = strtol(receivedByte, &p, 20);
+	printf("time :%d\n",time);*/
+
 	system ("date --date @$(printf '%d' 0x521dd201)");
+
+	printf("\n");
 	
 	//Collect the random number of next 28 bytes
 
@@ -278,7 +283,97 @@ int parse_client_hello(unsigned char *message, uint16_t size) {// Implementation
 
 int parse_server_hello(unsigned char *message, uint16_t size) {
 
+	ServerHello S_Hello;
+    	printf("THE DETAILS OF THE SERVER HELLO ARE AS UNDER :-\n");
+
+	/*printf("---------------RAW DATA FOR CODING HELP START---------------------\n");
+    	for (int i = 0; i < size; i++) {
+        	printf("(%d)0x%x\n", i,message[i]);
+		 
+    	}
+	printf("\n---------------RAW DATA FOR CODING HELP END-----------------------\n");*/
+
+	//Action on first two bytes for version------------
+	//Check if the versions are valid
+	if (message[0] != 0x03 || (message[1] != 0x01 && message[1] != 0x02 && message[1] != 0x03)) {
+        	return INVALID_VERSION;
+    	}
+
+	S_Hello.version.major = message[0];
+	S_Hello.version.minor = message[1];
 	
+    	printf("TLS Server Hello Message Version (2 bytes): ");
+
+    	switch (S_Hello.version.minor) {
+        	case 0x01: printf("1.0\n"); break;
+        	case 0x02: printf("1.1\n"); break;
+        	case 0x03: printf("1.2\n"); break;
+        	default: printf("unknown\n");
+    	}
+    	
+	//Action on text 4 bytes are for timestamp-----------------
+
+	unsigned int timestamp[32];
+
+	printf("The time stamp is (4 bytes) : ");
+	for(int i=2;i<=5;i++){
+		timestamp[i-2] = message[i];
+		printf("%d",timestamp[i]);
+	
+	}
+	
+	/*char receivedByte[12], *p;
+	sprintf(receivedByte, "0x%X%X%X%X", timestamp[0], timestamp[1], timestamp[2], timestamp[3]);
+   	int time = strtol(receivedByte, &p, 20);
+	printf("time :%d\n",time);*/
+
+	system ("date --date @$(printf '%d' 0x521dd201)");
+
+	printf("\n");
+	
+	//Collect the random number of next 28 bytes
+
+	unsigned int random[28];
+
+	printf("The random number is (28 bytes) : ");
+	for(int i=6;i<=33;i++){
+		random[i-6] = message[i];
+		printf("%x",random[i]);
+	}
+	printf("\n");
+	// Next is one byte session ID
+	
+	S_Hello.sessionID = message[34];
+	printf("The session ID is (1 byte) : %d\n", S_Hello.sessionID);
+
+	
+	//List the cipher suites
+	
+	unsigned int cisuite[2];
+
+	cisuite[0] = message[35];
+	cisuite[1] = message[36];
+	printf("The cipher suite accepted code is (each 2 bytes) : %x %x\n",cisuite[0],cisuite[1] );
+	
+	//List the compression method lengths
+
+	//C_Hello.compLength = message[36 + C_Hello.ciSuiteLength + 1]; // 71 for our test case
+	//printf("The compression method length is (1 byte) : %d\n", C_Hello.compLength);
+	
+
+	// List the compresion methods (each 1 byte)
+
+	//int startByteCompMethod = (36 + C_Hello.ciSuiteLength + 2);
+
+	unsigned int compMethod[1];
+	compMethod[0] = message[37];
+	printf("The comp method code is (each 1 bytes) : %x\n",compMethod[0] );
+	
+
+	// Find the extension length
+	
+	S_Hello.extLength = (message[38] << 8) + message[39];
+	printf("The extension length is (2 bytes) : %d\n", S_Hello.extLength);
     	
     	printf("2\n");
     	return 0;
