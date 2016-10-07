@@ -174,7 +174,7 @@ void print_tls_record_layer_info(HandshakeMessage *tls_message) {
 }
 
 
-// Implementation started by Milan...8 bytes of file parsed till start of random....
+
 int parse_client_hello(unsigned char *message, uint16_t size) {// Implementation started by Milan
 
 	ClientHello C_Hello;
@@ -207,7 +207,7 @@ int parse_client_hello(unsigned char *message, uint16_t size) {// Implementation
     	
 	//Action on text 4 bytes are for timestamp-----------------
 
-	unsigned int timestamp[32];
+	unsigned int timestamp[4];
 
 	printf("The time stamp is (4 bytes) : ");
 	for(int i=2;i<=5;i++){
@@ -216,11 +216,6 @@ int parse_client_hello(unsigned char *message, uint16_t size) {// Implementation
 	
 	}
 	
-	/*char receivedByte[12], *p;
-	sprintf(receivedByte, "0x%X%X%X%X", timestamp[0], timestamp[1], timestamp[2], timestamp[3]);
-   	int time = strtol(receivedByte, &p, 20);
-	printf("time :%d\n",time);*/
-
 	system ("date --date @$(printf '%d' 0x521dd201)");
 
 	printf("\n");
@@ -242,7 +237,6 @@ int parse_client_hello(unsigned char *message, uint16_t size) {// Implementation
 
 	//Finding the cipher suite length next 2 bytes
 
-	//C_Hello.ciSuiteLength = (message[36] << 8) + message[37];
 	C_Hello.ciSuiteLength = (message[35] << 8) + message[36];
 	printf("The cipher suite length is (2 bytes) : %d\n", C_Hello.ciSuiteLength);
 
@@ -281,7 +275,7 @@ int parse_client_hello(unsigned char *message, uint16_t size) {// Implementation
 	return 0;
 }
 
-int parse_server_hello(unsigned char *message, uint16_t size) {
+int parse_server_hello(unsigned char *message, uint16_t size) {// Implementation started by Milan
 
 	ServerHello S_Hello;
     	printf("THE DETAILS OF THE SERVER HELLO ARE AS UNDER :-\n");
@@ -313,7 +307,7 @@ int parse_server_hello(unsigned char *message, uint16_t size) {
     	
 	//Action on text 4 bytes are for timestamp-----------------
 
-	unsigned int timestamp[32];
+	unsigned int timestamp[4];
 
 	printf("The time stamp is (4 bytes) : ");
 	for(int i=2;i<=5;i++){
