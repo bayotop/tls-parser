@@ -78,6 +78,8 @@ int main(int argc, char* argv[]) {
             		return UNSUPPORTED_HANDSHAKE_MESSAGE_TYPE;
     	}
 
+	printf("The error code for debugging is %d\n",err);
+
     	if (err != 0) {
         	printf("There was an issue parsing this file. The issue is either malfored or not supported.\n");
 
@@ -374,15 +376,95 @@ int parse_certificate(unsigned char *message, uint16_t size) {
     	return 0;
 }
 
-int parse_server_key_exchange(unsigned char *message, uint16_t size) {// Implementation started by Milan
-    
-	printf("THE DETAILS OF THE SERVER KEY EXCHANGE ARE AS UNDER :-\n");
-	
-	printf("What we got for this : \n ");
-	for(int i =0; i< size; i++){
-		printf("%d ", message[i]);
-	}
-    	
+int parse_server_key_exchange(unsigned char *message, uint16_t size)
+{
+
+    	ServerKeyExchange severKeyExchange;
+    	uint16_t length;
+    	uint16_t indexOfProcessedByte=0;
+
+    	if(message[0]!=0x0C)
+    	{
+        	return UNSUPPORTED_HANDSHAKE_MESSAGE_TYPE;
+    	}
+
+    	//incase of DHE_RSA, DHE_DSS, DH_ANON next three byte is length
+    	//????
+    	// Convert raw[1], raw[2] and raw[3] into uint24_t number
+    	severKeyExchange.mLength = (0x00 << 24) + (message[1] << 16) + (message[2]<< 8) + message[3];
+    	length=severKeyExchange.mLength ;
+    	indexOfProcessedByte+=3;
+
+    	//next two bytes are for p length
+    	length-=2;
+    	severKeyExchange.params.length_dh_p = (0x00 <<8) + (message[4] << 8) + message[5];
+    	indexOfProcessedByte+=2;
+    	length-=severKeyExchange.params.length_dh_p;
+    	if(length<0)
+    	{
+        	return INVALID_FILE_LENGTH;
+    	}
+
+    	//next severKeyExchange.params.length_dh_p bytes are for p
+    	indexOfProcessedByte+=severKeyExchange.params.length_dh_p;
+
+    	//next two bytes are for g length
+    	length-=2;
+    	severKeyExchange.params.length_dh_g = (0x00 << 8) + (message[indexOfProcessedByte] << 8) + message[indexOfProcessedByte+1];
+    	indexOfProcessedByte+=2;
+    	length-=severKeyExchange.params.length_dh_g;
+    	if(length<0)
+    	{
+        	return INVALID_FILE_LENGTH;
+    	}
+
+    	//next severKeyExchange.params.length_dh_g bytes are for g
+    	indexOfProcessedByte+=severKeyExchange.params.length_dh_g;
+
+    	//next two bytes are for pubkey length
+    	length-=2;
+    	severKeyExchange.params.length_dh_ys = (0x00 << 8) + (message[indexOfProcessedByte] << 8) + message[indexOfProcessedByte+1];
+    	indexOfProcessedByte+=2;
+    	length-=severKeyExchange.params.length_dh_ys;
+    	if(length<0)
+    	{
+        	return INVALID_FILE_LENGTH;
+    	}
+
+    	//next severKeyExchange.params.length_dh_ys bytes are for pubkey
+    	indexOfProcessedByte+=severKeyExchange.params.length_dh_ys;
+
+    	//in case of dhe_dss and dhe_rsa KeyExchangeAlgorithms, there are
+	//additional byte for signiture and signiture hash algorithm
+    	//??????????????
+
+    	return 0;
+}
+
+
+int parse_client_key_exchange(unsigned char *message, uint16_t size)
+{
+
+    	ClientKeyExchange clientKeyExchange;
+    	uint16_t length;
+
+    	if(message[0]!=0x16)
+    	{
+        	return UNSUPPORTED_HANDSHAKE_MESSAGE_TYPE;
+    	}
+
+    	uint16_t indexOfProcessedByte=0;
+
+    	//next two bytes are for pubkey length
+    	length-=2;
+    	clientKeyExchange.pubKeyLength = (0x00 << 8) + (message[indexOfProcessedByte] << 8) + message[indexOfProcessedByte+1];
+    	indexOfProcessedByte+=2;
+    	length-=clientKeyExchange.pubKeyLength;
+    	if(length<0)
+    	{
+        	return INVALID_FILE_LENGTH;
+    	}
+
     	return 0;
 }
 
@@ -392,11 +474,5 @@ int parse_server_hello_done(unsigned char *message, uint16_t size) {
         return INVALID_FILE_LENGTH;
     }
 
-    return 0;
-}
-
-int parse_client_key_exchange(unsigned char *message, uint16_t size) {
-    // Not implemented yet
-    printf("16\n");
     return 0;
 }

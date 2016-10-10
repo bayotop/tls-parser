@@ -1,3 +1,6 @@
+#ifndef HEADER_H
+#define HEADER_H
+
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -38,6 +41,17 @@ typedef enum {
     FINISHED = 20,            // 0x14
 } HandshakeType;
 
+
+// may be extended, e.g., for ECDH -- see [TLSECC]
+typedef enum {
+    dhe_dss=5,
+    dhe_rsa=3,
+    dh_anon=6,
+    rsa=1,
+    dh_dss=4,
+    dh_rsa=2,
+} KeyExchangeAlgorithm;
+
 // This is how the message looks like as a whole (record layer + actual message)
 typedef struct {
     ContentType cType;
@@ -48,35 +62,55 @@ typedef struct {
     unsigned char *body;      // We need to allocate "length" bytes at runtime
 } HandshakeMessage;
 
-
-typedef struct { 
-	ProtocolVersion version;
-	unsigned int sessionID;
-	uint16_t ciSuiteLength;	
-    	unsigned int compLength;
-	unsigned int extLength;
+typedef struct {
+    ProtocolVersion version;
+    unsigned int sessionID;
+    uint16_t ciSuiteLength;
+    unsigned int compLength;
+    unsigned int extLength;
     // RFC 5246 page 40
 } ClientHello;
 
 typedef struct {
 
-	ProtocolVersion version;
-	unsigned int sessionID;
-	uint16_t ciSuiteLength;	
-    	unsigned int compLength;
-	unsigned int extLength;
+    ProtocolVersion version;
+    unsigned int sessionID;
+    uint16_t ciSuiteLength;
+    unsigned int compLength;
+    unsigned int extLength;
     // Not implemented yet
     // RFC 5246 page 41
 } ServerHello;
-    
-typedef struct {
-    // Not implemented yet
-    // RFC 5246 page 51
-} ServerKeyExchange;
 
 typedef struct {
-    // Not implemented yet
-    // RFC 5246 page 57
+    unsigned char * dh_p;
+    uint8_t length_dh_p;
+    unsigned char * dh_g;
+    uint8_t length_dh_g;
+    unsigned char * dh_Ys;
+    uint8_t length_dh_ys;
+} ServerDHParams;
+
+typedef struct {
+    uint32_t client_random[32];
+    uint32_t server_random[32];
+} signed_params;
+
+typedef struct {
+    HandshakeType handshakeType;
+    KeyExchangeAlgorithm keyExchangeAlgorithm;
+    uint32_t mLength;
+    ServerDHParams params;
+    signed_params signedParams;
+}ServerKeyExchange;
+
+typedef struct {
+    HandshakeType hsType;
+    //ProtocolVersion version;
+    //uint16_t fLength;
+    //KeyExchangeAlgorithm keyExchangeAlgorithm;
+    uint16_t pubKeyLength;
+    unsigned char * pubKey;
 } ClientKeyExchange;
 
 typedef struct { } Certificate;     // This message contains only a chain of certificates, which is not subject of parsing
@@ -91,3 +125,6 @@ int parse_certificate(unsigned char *message, uint16_t size);
 int parse_server_key_exchange(unsigned char *message, uint16_t size);
 int parse_server_hello_done(unsigned char *message, uint16_t size);
 int parse_client_key_exchange(unsigned char *message, uint16_t size);
+
+
+#endif // HEADER_H
