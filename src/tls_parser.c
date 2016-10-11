@@ -35,9 +35,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Parse the record layer headers and save the actual handshake message into tls_message->body
-    HandshakeMessage tls_message;
-    memset(&tls_message, 0, sizeof(tls_message));
-
+    HandshakeMessage tls_message = { 0 };
     err = initialize_tls_structure(buf, file_size, &tls_message);
 
     // Close the original buffer containing the file stream, as all data has to be in tls_message
@@ -69,6 +67,10 @@ int main(int argc, char* argv[]) {
             return 0;
     }
 
+    if (tls_message.body) {
+        free(tls_message.body);
+    }
+
     handle_errors(err);
 
     printf("\nSuccesfully finished parsing of message!\n");
@@ -76,18 +78,21 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-int initialize_tls_structure(unsigned char *raw, int size, HandshakeMessage *tls_message) {   
-    // Handle length
-    if (size <= 4 || raw == NULL) {
+int initialize_tls_structure(unsigned char *raw, int size, HandshakeMessage *tls_message) {
+    // Record layer
+    // Length has to be atleast (ContentType + TLS version)
+    if (size <= 3 || raw == NULL) {
         return INVALID_FILE_LENGTH;
     }
 
+    int pos = 0;
+
     // Only handshake messages of TLS version 1.0 - 1.2 are allowed
-    if (raw[0] != HANDSHAKE) {
+    if (raw[pos++] != HANDSHAKE) {
         return INVALID_CONTENT_TYPE;
     }
 
-    if (raw[1] != 0x03 || (raw[2] != 0x01 && raw[2] != 0x02 && raw[2] != 0x03)) {
+    if (!is_valid_tls_version(raw[pos], raw[pos + 1])) {
         return INVALID_VERSION;
     }
 
@@ -96,20 +101,24 @@ int initialize_tls_structure(unsigned char *raw, int size, HandshakeMessage *tls
     tls_message->version.major = raw[1];
     tls_message->version.minor = raw[2];
 
+    pos += 2;
+
     // Convert raw[3] and raw[4] to uint16_t number
-    tls_message->fLength = (raw[3] << 8) + raw[4];
+    tls_message->fLength = (raw[pos] << 8) + raw[pos + 1];
+    pos += 2;
 
     // Check if the sizes are correct (record protocol headers + length == file size)
-    if (tls_message->fLength + 5 != size) {
+    if (tls_message->fLength + pos != size) {
         return INVALID_FILE_LENGTH;
     }
 
     // Does not need to check this value as the parser will not continue if this is not a supported handshake message type
-    tls_message->hsType = raw[5];
+    tls_message->hsType = raw[pos++];
 
     // Convert raw[6], raw[7] and raw[8] into uint24_t number
     // It's actually uint24_t but thats not defined
-    tls_message->mLength = (0x00 << 24) + (raw[6] << 16) + (raw[7] << 8) + raw[8];
+    tls_message->mLength = (0x00 << 24) + (raw[pos] << 16) + (raw[pos + 1] << 8) + raw[pos + 2];
+    pos += 3;
 
     // Check if the sizes are correct (fLength value == mLength value + HandshakeType (1 byte) + mLength (3 bytes))
     if (tls_message->fLength != tls_message->mLength + 4) {
@@ -118,7 +127,7 @@ int initialize_tls_structure(unsigned char *raw, int size, HandshakeMessage *tls
 
     // Copy the rest of the message into our structure, so we can close the raw stream
     tls_message->body = (unsigned char *)malloc(tls_message->mLength);
-    memcpy(tls_message->body, raw + 9, tls_message->mLength);
+    memcpy(tls_message->body, raw + pos, tls_message->mLength);
 
     return 0;
 }
@@ -151,15 +160,255 @@ void print_tls_record_layer_info(HandshakeMessage *tls_message) {
 }
 
 int parse_client_hello(unsigned char *message, uint16_t size) {
-    // Not implemented yet
-    printf("1\n");
+    // A client hello has to be atleast 38 bytes
+    if (size < 38 || message == NULL) {
+        return INVALID_FILE_LENGTH;
+    }
+
+    int pos = 0;
+
+    ClientHello client_hello = {{ 0 }};
+
+    // Check if the versions are valid
+    if (!is_valid_tls_version(message[pos], message[pos + 1])) {
+            return INVALID_VERSION;
+    }
+
+    client_hello.version.major = message[pos];
+    client_hello.version.minor = message[pos + 1];
+    pos += 2;
+
+    // The Random structure    
+    client_hello.random.time = (message[pos] << 24) + (message[pos + 1] << 16) + (message[pos + 2] << 8) + message[pos + 3];
+    pos += 4;
+    memcpy(client_hello.random.random_bytes, message + pos, 28);
+    pos += 28;
+
+    // The SessionID structure
+    client_hello.sessionId.length = message[pos++];
+    if (client_hello.sessionId.length > 0) {
+        if (size < client_hello.sessionId.length + 28 + 4 + 2) {
+            return INVALID_FILE_LENGTH;
+        }
+
+        client_hello.sessionId.sessionId = (unsigned char *)malloc(client_hello.sessionId.length);
+        memcpy(client_hello.sessionId.sessionId, message + pos, client_hello.sessionId.length);
+        pos += client_hello.sessionId.length;
+    }
+
+    // The CipherSuitesStructure
+    client_hello.csCollection.length = (message[pos] << 8) + message[pos + 1];
+    pos += 2;
+    if (client_hello.csCollection.length > 0) {
+        if (size < pos + client_hello.csCollection.length) {
+            return INVALID_FILE_LENGTH;
+        }
+
+        client_hello.csCollection.cipherSuites = (unsigned char *)malloc(client_hello.csCollection.length);
+        memcpy(client_hello.csCollection.cipherSuites, message + pos, client_hello.csCollection.length);
+        pos += client_hello.csCollection.length;
+    }
+
+    // CompresionMethod 2 bytes and Extensions 1 at least
+    if (size < pos + 3) {
+            return INVALID_FILE_LENGTH;
+    }
+
+    // The CompresionMethodStructure
+    client_hello.compresionMethod.length = message[pos++];
+    if (client_hello.compresionMethod.length != 1) {
+            printf("%x", client_hello.compresionMethod.length);
+            return INVALID_FILE_LENGTH;
+    }
+
+    client_hello.compresionMethod.compresionMethod = message[pos++];
+
+    if (size != pos) {
+        // Extensions are present.
+        // Save to rest of the data to our structue. No more checks about it,
+        // we will just print it out as extensions are not in scope. 
+        client_hello.hasExtensions = 1; 
+        client_hello.extensions = (unsigned char *)malloc(size - pos);
+        memcpy(client_hello.extensions, message + pos, size - pos);
+    }
+
+    print_client_hello_message(&client_hello, size - pos);
+
+    clean_client_hello(client_hello);
+
     return 0;
 }
 
+void print_client_hello_message(ClientHello *message, int extensions_length) {
+    printf("Details of ClientHello:\n\n");
+    printf("TLS Version: ");
+
+    switch (message->version.minor) {
+        case 0x01: printf("1.0\n"); break;
+        case 0x02: printf("1.1\n"); break;
+        case 0x03: printf("1.2\n"); break;
+        default: printf("unknown\n");
+    }
+
+    // Time in human-readable format
+    time_t raw_time = (time_t) message->random.time;
+    struct tm *timeinfo = localtime(&raw_time);
+    printf ("Timestamp: %s", asctime(timeinfo));
+
+    printf("Random data: ");
+    int i;
+    for (i = 0; i < 28; i++) {        
+        printf("%x", message->random.random_bytes[i]);
+    }
+    printf("\n");
+
+    printf("SessionID: ");
+    if ( message->sessionId.length != 0) {
+        for (i = 0; i < message->sessionId.length; i++) { 
+            printf("%x", message->sessionId.sessionId[i]);
+        }
+    } else {
+        printf("N/A");
+    }
+
+    printf("\n");
+
+    printf("Choosen cipher suites:\n");
+    for (i = 0; i < message->csCollection.length; i++) {
+        if (i % 2) {
+            printf("%x ", message->csCollection.cipherSuites[i]); 
+        } else {
+            printf("0x%x", message->csCollection.cipherSuites[i]);
+        }
+    }
+    printf("\n");
+
+    printf("Compresion method: %d\n", message->compresionMethod.compresionMethod);
+    printf("Has extensions: %s\n", message->hasExtensions ? "true" : "false");
+
+    printf("Raw extensions data:\n\n");
+    for (i = 0; i < extensions_length; i++) {
+        printf("%x", message->extensions[i]);
+    }
+
+    printf("\n");
+}
+
 int parse_server_hello(unsigned char *message, uint16_t size) {
-    // Not implemented yet
-    printf("2\n");
+    // A server hello has to be atleast 38 bytes
+    if (size < 38 || message == NULL) {
+        return INVALID_FILE_LENGTH;
+    }
+
+    int pos = 0;
+
+    ServerHello server_hello = {{ 0 }};
+
+    // Check if the versions are valid
+    if (!is_valid_tls_version(message[pos], message[pos + 1])) {
+            return INVALID_VERSION;
+    }
+
+    server_hello.version.major = message[pos];
+    server_hello.version.minor = message[pos + 1];
+    pos += 2;
+
+    // The Random structure    
+    server_hello.random.time = (message[pos] << 24) + (message[pos + 1] << 16) + (message[pos + 2] << 8) + message[pos + 3];
+    pos += 4;
+    memcpy(server_hello.random.random_bytes, message + pos, 28);
+    pos += 28;
+
+    // The SessionID structure
+    server_hello.sessionId.length = message[pos++];
+    if (server_hello.sessionId.length > 0) {
+        if (size < server_hello.sessionId.length + 28 + 4 + 2) {
+            return INVALID_FILE_LENGTH;
+        }
+
+        server_hello.sessionId.sessionId = (unsigned char *)malloc(server_hello.sessionId.length);
+        memcpy(server_hello.sessionId.sessionId, message + pos, server_hello.sessionId.length);
+        pos += server_hello.sessionId.length;
+    }
+
+    // The choosen cipher suite
+    server_hello.cipherSuite[0] = message[pos++];
+    server_hello.cipherSuite[1] = message[pos++];
+
+    // CompresionMethod needs to be present
+    if (size < pos + 1) {
+            return INVALID_FILE_LENGTH;
+    }
+
+    // The CompresionMethodStructure
+    server_hello.compresionMethod = message[pos++];
+   
+    if (size != pos) {
+        // Extensions are present.
+        // Save to rest of the data to our structue. No more checks about it,
+        // we will just print it out as extensions are not in scope. 
+        server_hello.hasExtensions = 1; 
+        server_hello.extensions = (unsigned char *)malloc(size - pos);
+        memcpy(server_hello.extensions, message + pos, size - pos);
+    }
+
+    print_server_hello_message(&server_hello, size - pos);
+
+    clean_server_hello(server_hello);
+
     return 0;
+}
+
+void print_server_hello_message(ServerHello *message, int extensions_length) {
+    printf("Details of ServerHello:\n\n");
+    printf("TLS Version: ");
+
+    switch (message->version.minor) {
+        case 0x01: printf("1.0\n"); break;
+        case 0x02: printf("1.1\n"); break;
+        case 0x03: printf("1.2\n"); break;
+        default: printf("unknown\n");
+    }
+
+    // Time in human-readable format
+    time_t raw_time = (time_t) message->random.time;
+    struct tm *timeinfo = localtime(&raw_time);
+    printf ("Timestamp: %s", asctime(timeinfo));
+
+    printf("Random data: ");
+    int i;
+    for (i = 0; i < 28; i++) {        
+        printf("%x", message->random.random_bytes[i]);
+    }
+    printf("\n");
+
+    printf("SessionID: ");
+    if ( message->sessionId.length != 0) {
+        for (i = 0; i < message->sessionId.length; i++) { 
+            printf("%x", message->sessionId.sessionId[i]);
+        }
+    } else {
+        printf("N/A");
+    }
+
+    printf("\n");
+
+    printf("Choosen cipher suite: 0x");
+    printf("%x", message->cipherSuite[0]); 
+    printf("%x\n", message->cipherSuite[1]);
+
+    printf("Compresion method: %d\n", message->compresionMethod);
+    if (message->hasExtensions) {
+        printf("Has extensions: true\n");
+        printf("Raw extensions data:\n\n");
+        for (i = 0; i < extensions_length; i++) {
+            printf("%x", message->extensions[i]);
+        }
+    } else {
+        printf("Has extensions: false");
+    } 
+
+    printf("\n");
 }
 
 int parse_certificate(unsigned char *message, uint16_t size) {
@@ -194,6 +443,34 @@ int parse_client_key_exchange(unsigned char *message, uint16_t size) {
     // Not implemented yet
     printf("16\n");
     return 0;
+}
+
+void clean_client_hello(ClientHello message) {
+    if (message.sessionId.sessionId) {
+        free(message.sessionId.sessionId);
+    }
+
+    if (message.csCollection.cipherSuites) {
+        free(message.csCollection.cipherSuites);
+    }
+
+    if (message.extensions) {
+        free(message.extensions);
+    }
+}
+
+void clean_server_hello(ServerHello message) {
+    if (message.sessionId.sessionId) {
+        free(message.sessionId.sessionId);
+    }
+
+    if (message.extensions) {
+        free(message.extensions);
+    }
+}
+
+int is_valid_tls_version(unsigned char major, unsigned char minor) {
+    return major == 0x03 && (minor == 0x01 || minor == 0x02 || minor == 0x03);
 }
 
 void handle_errors(int error_code) {

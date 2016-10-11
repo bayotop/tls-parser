@@ -1,7 +1,6 @@
 script: 
-  - gcc -o tls-parser src/*.* -Wall
-  - ./tls-parser examples/TLSv1.2/Certificate
-  - ./tls-parser examples/TLSv1.2/ServerHelloDone
-  - gcc -o tls_parser -std=c99 tls_parser.c 
-  - ./tls_parser examples/TLSv1.0/ClientHello
-  - ./tls_parser examples/TLSv1.2/ServerHello
+  - gcc -o tls-parser src/tls_parser.* -Wall
+  - ./tls-parser examples/valid/TLSv1.2/Certificate
+  - ./tls-parser examples/valid/TLSv1.2/ServerHelloDone
+  - ./tls-parser examples/valid/TLSv1.0/ClientHello
+  - ./tls-parser examples/valid/TLSv1.2/ServerHello

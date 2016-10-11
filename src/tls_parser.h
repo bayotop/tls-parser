@@ -1,7 +1,9 @@
-#include <stdio.h>
-#include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
 
 #define NO_ERROR 0
 #define INVALID_FILE_LENGTH 1
@@ -12,6 +14,26 @@ typedef struct {
     uint8_t major;
     uint8_t minor;
 } ProtocolVersion;
+
+typedef struct {
+    uint32_t time;
+    unsigned char random_bytes[28];
+} Random;
+
+typedef struct {
+    uint8_t length;
+    unsigned char *sessionId;
+} SessionID;
+
+typedef struct {
+    uint16_t length;
+    unsigned char *cipherSuites; // The individual suites are not in scope of the parser
+} CipherSuiteCollection;
+
+typedef struct {
+    uint8_t length;
+    uint8_t compresionMethod; // The individual method is not in scope of the parser
+} CompresionMethod;
 
 // All messages parseable using this parser should start with 0x16 indicating the hand-shake protocol
 // Any other value is considered invalid
@@ -48,14 +70,24 @@ typedef struct {
 } HandshakeMessage;
 
 
-typedef struct { 
-    // Not implemented yet
-    // RFC 5246 page 40
+typedef struct {
+    ProtocolVersion version;
+    Random random;
+    SessionID sessionId;
+    CipherSuiteCollection csCollection;
+    CompresionMethod compresionMethod;
+    uint8_t hasExtensions;
+    unsigned char *extensions; // We need to calculate correct size runtime
 } ClientHello;
 
 typedef struct {
-    // Not implemented yet
-    // RFC 5246 page 41
+    ProtocolVersion version;
+    Random random;
+    SessionID sessionId;
+    unsigned char cipherSuite[2];
+    uint8_t compresionMethod;
+    uint8_t hasExtensions;
+    unsigned char *extensions; // We need to calculate correct size runtime
 } ServerHello;
     
 typedef struct {
@@ -75,9 +107,14 @@ int initialize_tls_structure(unsigned char *raw, int size, HandshakeMessage *tls
 void print_tls_record_layer_info(HandshakeMessage *tls_message);
 
 int parse_client_hello(unsigned char *message, uint16_t size);
+void print_client_hello_message(ClientHello *client_hello, int size);
 int parse_server_hello(unsigned char *message, uint16_t size);
+void print_server_hello_message(ServerHello *message, int extensions_length);
 int parse_certificate(unsigned char *message, uint16_t size);
 int parse_server_key_exchange(unsigned char *message, uint16_t size);
 int parse_server_hello_done(unsigned char *message, uint16_t size);
 int parse_client_key_exchange(unsigned char *message, uint16_t size);
+void clean_client_hello(ClientHello message);
+void clean_server_hello(ServerHello message);
+int is_valid_tls_version(unsigned char major, unsigned char minor);
 void handle_errors(int error_code);
