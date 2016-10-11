@@ -423,40 +423,37 @@ int parse_certificate(unsigned char *message, uint16_t size) {
     return 0;
 }
 
-int parse_server_key_exchange(unsigned char *message, uint16_t size)
-{
+int parse_server_key_exchange(unsigned char *message, uint16_t size) {
+    // The actual algorithm and other stuff like digital signatures of params
+    // are not in scope as their presence is determined by extensions in hello messages
+    // and the used certificate (which are both ignored).
+    if (size >= 0) {
+        printf("The key exchange parameters provided are %d bytes long.\n", size);
+    }
 
-        ServerKeyExchange severKeyExchange;
-        printf("The severKeyExchange message:\n");
-
-        uint16_t length;
-        //The three byte is length of ServerDHParams's length
-        severKeyExchange.mLength = (0x00 << 16) + (message[0] << 16) +(0x00 << 8) + (message[1] << 8) + message[3];
-
-        length=severKeyExchange.mLength-3;
-        if(length<0)
-        {
-            return INVALID_FILE_LENGTH;
-        }
-        printf("ServerDHParams length is %d bytes long.\n", length);
-
-        return 0;
+    return 0;
 }
 
-int parse_client_key_exchange(unsigned char *message, uint16_t size)
-{
-    printf("The clientKeyExchange message:\n");
-
-    ClientKeyExchange clientKeyExchange;
-    uint16_t length;
-    clientKeyExchange.pubKeyLength = (0x00 << 8) + (message[0] << 8) + message[1];
-
-    length=clientKeyExchange.pubKeyLength-2;
-    if(length<0)
-    {
+int parse_server_hello_done(unsigned char *message, uint16_t size) {
+    // The ServerHelloDone is empty. Just check if thats true.
+    if (size != 0) {
         return INVALID_FILE_LENGTH;
     }
-    printf("Encrypted key data length is %d bytes long.\n", length);
+
+    return 0;
+}
+
+int parse_client_key_exchange(unsigned char *message, uint16_t size) {
+    // We only check until we get to the exchange parameters, whose
+    // type is specified similiary as server key exchange parameters
+    // in earlier messages.
+    uint8_t length = message[0];
+
+    if (length != size - 1) {
+        return INVALID_FILE_LENGTH;
+    }
+
+    printf("The key exchange parameters provided are %d bytes long.\n", size);
 
     return 0;
 }
@@ -506,13 +503,4 @@ void handle_errors(int error_code) {
     }
 
     exit(0);
-}
-
-int parse_server_hello_done(unsigned char *message, uint16_t size) {
-    // The ServerHelloDone is empty. 
-    if (size != 0) {
-        return INVALID_FILE_LENGTH;
-    }
-
-    return 0;
 }
