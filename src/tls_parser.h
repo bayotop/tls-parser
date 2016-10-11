@@ -91,13 +91,13 @@ typedef struct {
 } ServerHello;
     
 typedef struct {
-    // Not implemented yet
-    // RFC 5246 page 51
-} ServerKeyExchange;
+    uint32_t mLength;
+    unsigned char * ServerDHParams;
+}ServerKeyExchange;
 
 typedef struct {
-    // Not implemented yet
-    // RFC 5246 page 57
+    uint16_t pubKeyLength;
+    unsigned char * pubKey;
 } ClientKeyExchange;
 
 typedef struct { } Certificate;     // This message contains only a chain of certificates, which is not subject of parsing

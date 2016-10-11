@@ -423,24 +423,41 @@ int parse_certificate(unsigned char *message, uint16_t size) {
     return 0;
 }
 
-int parse_server_key_exchange(unsigned char *message, uint16_t size) {
-    // Not implemented yet
-    printf("12\n");
-    return 0;
+int parse_server_key_exchange(unsigned char *message, uint16_t size)
+{
+
+        ServerKeyExchange severKeyExchange;
+        printf("The severKeyExchange message:");
+
+        uint16_t length;
+        printf("The three byte is length of ServerDHParams's length:");
+        severKeyExchange.mLength = (0x00 << 16) + (message[0] << 16) +(0x00 << 8) + (message[1] << 8) + message[3];
+
+        length=severKeyExchange.mLength-3;
+        if(length<0)
+        {
+            return INVALID_FILE_LENGTH;
+        }
+        printf("ServerDHParams length is %d bytes long.\n", length);
+
+        return 0;
 }
 
-int parse_server_hello_done(unsigned char *message, uint16_t size) {
-    // The ServerHelloDone is empty. Just check if thats true.
-    if (size != 0) {
+int parse_client_key_exchange(unsigned char *message, uint16_t size)
+{
+    printf("The clientKeyExchange message:");
+
+    ClientKeyExchange clientKeyExchange;
+    uint16_t length;
+    clientKeyExchange.pubKeyLength = (0x00 << 8) + (message[0] << 8) + message[1];
+
+    length=clientKeyExchange.pubKeyLength-2;
+    if(length<0)
+    {
         return INVALID_FILE_LENGTH;
     }
+    printf("Encrypted key data length is %d bytes long.\n", length);
 
-    return 0;
-}
-
-int parse_client_key_exchange(unsigned char *message, uint16_t size) {
-    // Not implemented yet
-    printf("16\n");
     return 0;
 }
 
@@ -489,4 +506,13 @@ void handle_errors(int error_code) {
     }
 
     exit(0);
+}
+
+int parse_server_hello_done(unsigned char *message, uint16_t size) {
+    // The ServerHelloDone is empty. 
+    if (size != 0) {
+        return INVALID_FILE_LENGTH;
+    }
+
+    return 0;
 }
