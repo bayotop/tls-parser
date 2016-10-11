@@ -145,8 +145,7 @@ void print_tls_record_layer_info(HandshakeMessage *tls_message) {
 
     printf("Protocol type: %d\n", tls_message->cType);
     printf("Fragment length: %d\n", tls_message->fLength);
-    printf("Handshake message type: %d\n", tls_message->hsType);
-    printf("Handshake message length: %d\n\n", tls_message->mLength);
+    printf("Handshake message type: %d\n\n", tls_message->hsType);
 
     // Uncomment for debugging purposes
     /*printf("Message raw data: \n\n");
