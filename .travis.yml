@@ -4,3 +4,5 @@ script:
   - ./tls-parser examples/valid/TLSv1.2/ServerHelloDone
   - ./tls-parser examples/valid/TLSv1.0/ClientHello
   - ./tls-parser examples/valid/TLSv1.2/ServerHello
+  - ./tls-parser examples/valid/TLSv1.2/ServerKeyExchange
+  - ./tls-parser examples/valid/TLSv1.2/ClientKeyExchange
