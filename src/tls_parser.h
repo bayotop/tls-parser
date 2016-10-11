@@ -90,10 +90,6 @@ typedef struct {
     unsigned char *extensions; // We need to calculate correct size runtime
 } ServerHello;
     
-<<<<<<< HEAD
-typedef struct { } ServerKeyExchange; // Contains KeyExchangeAlgorithm parameters, which are not subject of parsing
-typedef struct { } ClientKeyExchange; // Contains either a PreMasterSecret or DH Client Parameters like (key) and is not subject of parsing
-=======
 typedef struct {
     uint32_t mLength;
     unsigned char * ServerDHParams;
@@ -104,9 +100,10 @@ typedef struct {
     unsigned char * pubKey;
 } ClientKeyExchange;
 
->>>>>>> origin/master
-typedef struct { } Certificate;     // This message contains only a chain of certificates, which is not subject of parsing
-typedef struct { } ServerHelloDone; // This message contains nothing, it's defined just for the sake of complentness
+typedef struct { } Certificate;       // This message contains only a chain of certificates, which is not subject of parsing
+typedef struct { } ServerKeyExchange; // Contains KeyExchangeAlgorithm parameters, which are not subject of parsing
+typedef struct { } ClientKeyExchange; // Contains either a PreMasterSecret or DH Client Parameters like (key) and is not subject of parsing
+typedef struct { } ServerHelloDone;   // This message contains nothing, it's defined just for the sake of complentness
 
 int initialize_tls_structure(unsigned char *raw, int size, HandshakeMessage *tls_message);
 void print_tls_record_layer_info(HandshakeMessage *tls_message);
