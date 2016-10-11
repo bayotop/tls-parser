@@ -89,16 +89,6 @@ typedef struct {
     uint8_t hasExtensions;
     unsigned char *extensions; // We need to calculate correct size runtime
 } ServerHello;
-    
-typedef struct {
-    uint32_t mLength;
-    unsigned char * ServerDHParams;
-}ServerKeyExchange;
-
-typedef struct {
-    uint16_t pubKeyLength;
-    unsigned char * pubKey;
-} ClientKeyExchange;
 
 typedef struct { } Certificate;       // This message contains only a chain of certificates, which is not subject of parsing
 typedef struct { } ServerKeyExchange; // Contains KeyExchangeAlgorithm parameters, which are not subject of parsing
