@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
         case 16:
             err = parse_client_key_exchange(tls_message.body, tls_message.mLength); break;
         default:
-            printf("Unsupported handshake message type.\n");
+            printf("[ERROR]: Unsupported handshake message type.\n");
             return 0;
     }
 
@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
 
     handle_errors(err);
 
-    printf("\n[OK:] Finished parsing of message!\n");
+    printf("\n[OK]: Finished parsing of message!\n");
 
     return 0;
 }
