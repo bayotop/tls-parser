@@ -1,8 +1,8 @@
 script: 
   - gcc -o tls-parser src/tls_parser.* -Wall
-  - ./tls-parser examples/valid/TLSv1.2/Certificate
-  - ./tls-parser examples/valid/TLSv1.2/ServerHelloDone
-  - ./tls-parser examples/valid/TLSv1.0/ClientHello
-  - ./tls-parser examples/valid/TLSv1.2/ServerHello
-  - ./tls-parser examples/valid/TLSv1.2/ServerKeyExchange
-  - ./tls-parser examples/valid/TLSv1.2/ClientKeyExchange
+  - find examples/valid/TLSv1.0/* -exec ./tls-parser  {} \; | grep '\[ERROR:\]' | awk '{ print } END { print NR }'
+  - find examples/valid/TLSv1.1/* -exec ./tls-parser  {} \; | grep '\[ERROR:\]' | awk '{ print } END { print NR }'
+  - find examples/valid/TLSv1.2/* -exec ./tls-parser  {} \; | grep '\[ERROR:\]' | awk '{ print } END { print NR }'
+  - find examples/valid/TLSv1.0/* -exec ./tls-parser  {} \; | grep '\[OK:\]' | awk '{ print } END { print NR }'
+  - find examples/valid/TLSv1.1/* -exec ./tls-parser  {} \; | grep '\[OK:\]' | awk '{ print } END { print NR }'
+  - find examples/valid/TLSv1.2/* -exec ./tls-parser  {} \; | grep '\[OK:\]' | awk '{ print } END { print NR }'

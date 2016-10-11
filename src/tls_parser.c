@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
 
     handle_errors(err);
 
-    printf("\nSuccesfully finished parsing of message!\n");
+    printf("\n[OK:] Finished parsing of message!\n");
 
     return 0;
 }
