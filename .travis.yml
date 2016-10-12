@@ -1,5 +1,5 @@
 script: 
-  - gcc -o tls-parser src/tls_parser.* -Wall
+  - gcc -o tls-parser src/tls_parser.* -Wall -Wextra
   - find examples/valid/TLSv1.0/* -exec ./tls-parser  {} \; | fgrep '[ERROR]' | awk '{ print } END { print NR }'
   - find examples/valid/TLSv1.1/* -exec ./tls-parser  {} \; | fgrep '[ERROR]' | awk '{ print } END { print NR }'
   - find examples/valid/TLSv1.2/* -exec ./tls-parser  {} \; | fgrep '[ERROR]' | awk '{ print } END { print NR }'

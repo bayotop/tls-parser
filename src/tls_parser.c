@@ -35,7 +35,8 @@ int main(int argc, char* argv[]) {
     }
 
     // Parse the record layer headers and save the actual handshake message into tls_message->body
-    HandshakeMessage tls_message = { 0 };
+    HandshakeMessage tls_message;
+    memset(&tls_message, 0, sizeof(tls_message));
     err = initialize_tls_structure(buf, file_size, &tls_message);
 
     // Close the original buffer containing the file stream, as all data has to be in tls_message
@@ -55,11 +56,11 @@ int main(int argc, char* argv[]) {
         case 2:
             err = parse_server_hello(tls_message.body, tls_message.mLength); break;
         case 11:
-            err = parse_certificate(tls_message.body, tls_message.mLength); break;
+            err = parse_certificate(tls_message.mLength); break;
         case 12: 
-            err = parse_server_key_exchange(tls_message.body, tls_message.mLength); break;
+            err = parse_server_key_exchange(tls_message.mLength); break;
         case 14:
-            err = parse_server_hello_done(tls_message.body, tls_message.mLength); break;
+            err = parse_server_hello_done(tls_message.mLength); break;
         case 16:
             err = parse_client_key_exchange(tls_message.body, tls_message.mLength); break;
         default:
@@ -166,7 +167,8 @@ int parse_client_hello(unsigned char *message, uint16_t size) {
 
     int pos = 0;
 
-    ClientHello client_hello = {{ 0 }};
+    ClientHello client_hello;
+    memset(&client_hello, 0, sizeof(client_hello));
 
     // Check if the versions are valid
     if (!is_valid_tls_version(message[pos], message[pos + 1])) {
@@ -301,7 +303,8 @@ int parse_server_hello(unsigned char *message, uint16_t size) {
 
     int pos = 0;
 
-    ServerHello server_hello = {{ 0 }};
+    ServerHello server_hello;
+    memset(&server_hello, 0, sizeof(server_hello));
 
     // Check if the versions are valid
     if (!is_valid_tls_version(message[pos], message[pos + 1])) {
@@ -410,7 +413,7 @@ void print_server_hello_message(ServerHello *message, int extensions_length) {
     printf("\n");
 }
 
-int parse_certificate(unsigned char *message, uint16_t size) {
+int parse_certificate(uint16_t size) {
     // The Certificate message contains only a chain of certificates. 
     // The only thing to do is to verify, that the chain is not empty 
     // as we are not able to (and not supposed to) say anything about the data.
@@ -423,18 +426,17 @@ int parse_certificate(unsigned char *message, uint16_t size) {
     return 0;
 }
 
-int parse_server_key_exchange(unsigned char *message, uint16_t size) {
+int parse_server_key_exchange( uint16_t size) {
     // The actual algorithm and other stuff like digital signatures of params
     // are not in scope as their presence is determined by extensions in hello messages
     // and the used certificate (which are both ignored).
-    if (size >= 0) {
-        printf("The key exchange parameters provided are %d bytes long.\n", size);
-    }
+    printf("The key exchange parameters provided are %d bytes long.\n", size);
+
 
     return 0;
 }
 
-int parse_server_hello_done(unsigned char *message, uint16_t size) {
+int parse_server_hello_done(uint16_t size) {
     // The ServerHelloDone is empty. Just check if thats true.
     if (size != 0) {
         return INVALID_FILE_LENGTH;
