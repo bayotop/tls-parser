@@ -1,37 +1,27 @@
 #include "tls_parser.h"
 
+#define MIN_RECORD_LAYER_SIZE 3 // Has to be atleast (ContentType + TLS version)
+#define MIN_CLIENT_HELLO_SIZE 38 // A client hello has to be atleast 38 bytes
+#define MIN_SERVER_HELLO_SIZE 38 // A server hello has to be atleast 38 bytes
+#define HELLO_RANDOM_BYTES_SIZE 28 // As specified in RFC
+#define MAXIMUM_FILE_SIZE 20000000 // bytes => 20 MB
+
 int main(int argc, char* argv[]) {
     int err;
 
     // Check command line parameters and print usages in case they are not valid
     if (argc != 2) {
-        printf("usage: %s\n", argv[0]);
+        printf("usage: %s\n path_to_file", argv[0]);
 
         return 0;
     }
 
-    // Try to open provided file
-    FILE *stream;
-    stream = fopen(argv[1], "rb");
-
-    if (stream == NULL) {
-        printf("The file '%s' couldn't be opened.\n", argv[1]);
-
-        return 0;
-    }
-
-    // Get the actual file length
-    fseek(stream, 0, SEEK_END);
-    int file_size = ftell(stream);
-    fseek(stream, 0, SEEK_SET);
-
-    // Copy file content into buffer and close file stream
     unsigned char *buf;
-    buf = (unsigned char *)malloc(file_size);
-    fread(buf, file_size, 1, stream);
+    int file_size = -1;
 
-    if (stream) {
-        fclose(stream);
+    // Check whether the path provided links to a reguler file and checks it's size
+    if (((buf = get_safe_input_file(argv[1], &file_size)) == NULL) || (file_size == -1)) {
+        return 0;
     }
 
     // Parse the record layer headers and save the actual handshake message into tls_message->body
@@ -81,8 +71,7 @@ int main(int argc, char* argv[]) {
 
 int initialize_tls_structure(unsigned char *raw, int size, HandshakeMessage *tls_message) {
     // Record layer
-    // Length has to be atleast (ContentType + TLS version)
-    if (size <= 3 || raw == NULL) {
+    if (size <= MIN_RECORD_LAYER_SIZE || raw == NULL) {
         return INVALID_FILE_LENGTH;
     }
 
@@ -147,21 +136,10 @@ void print_tls_record_layer_info(HandshakeMessage *tls_message) {
     printf("Protocol type: %d\n", tls_message->cType);
     printf("Fragment length: %d\n", tls_message->fLength);
     printf("Handshake message type: %d\n\n", tls_message->hsType);
-
-    // Uncomment for debugging purposes
-    /*printf("Message raw data: \n\n");
-
-    int i;
-    for (i = 0; i < tls_message->mLength; i++) {
-        printf("0x%x ", tls_message->body[i]); 
-    }
-
-    printf("\n");*/
 }
 
 int parse_client_hello(unsigned char *message, uint16_t size) {
-    // A client hello has to be atleast 38 bytes
-    if (size < 38 || message == NULL) {
+    if (size < MIN_CLIENT_HELLO_SIZE || message == NULL) {
         return INVALID_FILE_LENGTH;
     }
 
@@ -182,13 +160,13 @@ int parse_client_hello(unsigned char *message, uint16_t size) {
     // The Random structure    
     client_hello.random.time = (message[pos] << 24) + (message[pos + 1] << 16) + (message[pos + 2] << 8) + message[pos + 3];
     pos += 4;
-    memcpy(client_hello.random.random_bytes, message + pos, 28);
-    pos += 28;
+    memcpy(client_hello.random.random_bytes, message + pos, HELLO_RANDOM_BYTES_SIZE);
+    pos += HELLO_RANDOM_BYTES_SIZE;
 
     // The SessionID structure
     client_hello.sessionId.length = message[pos++];
     if (client_hello.sessionId.length > 0) {
-        if (size < client_hello.sessionId.length + 28 + 4 + 2) {
+        if (size < client_hello.sessionId.length + HELLO_RANDOM_BYTES_SIZE + 4 + 2) {
             return INVALID_FILE_LENGTH;
         }
 
@@ -258,7 +236,7 @@ void print_client_hello_message(ClientHello *message, int extensions_length) {
 
     printf("Random data: ");
     int i;
-    for (i = 0; i < 28; i++) {        
+    for (i = 0; i < HELLO_RANDOM_BYTES_SIZE; i++) {        
         printf("%x", message->random.random_bytes[i]);
     }
     printf("\n");
@@ -296,8 +274,7 @@ void print_client_hello_message(ClientHello *message, int extensions_length) {
 }
 
 int parse_server_hello(unsigned char *message, uint16_t size) {
-    // A server hello has to be atleast 38 bytes
-    if (size < 38 || message == NULL) {
+    if (size < MIN_SERVER_HELLO_SIZE || message == NULL) {
         return INVALID_FILE_LENGTH;
     }
 
@@ -318,13 +295,13 @@ int parse_server_hello(unsigned char *message, uint16_t size) {
     // The Random structure    
     server_hello.random.time = (message[pos] << 24) + (message[pos + 1] << 16) + (message[pos + 2] << 8) + message[pos + 3];
     pos += 4;
-    memcpy(server_hello.random.random_bytes, message + pos, 28);
-    pos += 28;
+    memcpy(server_hello.random.random_bytes, message + pos, HELLO_RANDOM_BYTES_SIZE);
+    pos += HELLO_RANDOM_BYTES_SIZE;
 
     // The SessionID structure
     server_hello.sessionId.length = message[pos++];
     if (server_hello.sessionId.length > 0) {
-        if (size < server_hello.sessionId.length + 28 + 4 + 2) {
+        if (size < server_hello.sessionId.length + HELLO_RANDOM_BYTES_SIZE + 4 + 2) {
             return INVALID_FILE_LENGTH;
         }
 
@@ -379,7 +356,7 @@ void print_server_hello_message(ServerHello *message, int extensions_length) {
 
     printf("Random data: ");
     int i;
-    for (i = 0; i < 28; i++) {        
+    for (i = 0; i < HELLO_RANDOM_BYTES_SIZE; i++) {        
         printf("%x", message->random.random_bytes[i]);
     }
     printf("\n");
@@ -486,6 +463,68 @@ void clean_server_hello(ServerHello message) {
 
 int is_valid_tls_version(unsigned char major, unsigned char minor) {
     return major == 0x03 && (minor == 0x01 || minor == 0x02 || minor == 0x03);
+}
+
+unsigned char* get_safe_input_file(char *path, int *file_size) {
+    struct stat sb;
+
+    // Only regular files are processed. No symbolic links, sockets, dirs, etc.
+    if (lstat(path, &sb) == 0 && !S_ISREG(sb.st_mode))
+    {
+        printf("The path '%s' is not a regular file.\n", path);
+
+        return NULL;
+    }
+
+    // Try to open provided file
+    FILE *stream;
+    stream = fopen(path, "rb");
+
+    if (stream == NULL) {
+        printf("The file '%s' couldn't be opened.\n", path);
+
+        return NULL;
+    }
+
+    // Get the actual file length
+    if (fseeko(stream, 0, SEEK_END) != 0) {
+        printf("Couldn't read the file '%s' (fseeko).\n", path);
+        fclose_safe(stream);
+
+        return NULL;
+    }
+
+    *file_size = ftello(stream);
+    if (*file_size == -1) {
+        printf("Couldn't read the file '%s' (ftello).\n", path);
+        fclose_safe(stream);
+
+        return NULL;
+    }
+
+    // Prevent hangs when a very large file is given by the user
+    if (*file_size > MAXIMUM_FILE_SIZE) {
+        printf("The file '%s' is larger then 20 MB.\n", path);
+        fclose_safe(stream);
+
+        return NULL;
+    }
+
+    fseek(stream, 0, SEEK_SET);
+
+    // Copy file content into buffer and close file stream
+    unsigned char *buf = (unsigned char *)malloc(*file_size);
+    fread(buf, *file_size, 1, stream);
+
+    fclose_safe(stream);
+
+    return buf;
+}
+
+void fclose_safe(FILE * stream) {
+    if (stream != NULL) {
+        fclose(stream);
+    }
 }
 
 void handle_errors(int error_code) {

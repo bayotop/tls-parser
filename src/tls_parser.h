@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 
 
@@ -109,4 +110,6 @@ int parse_client_key_exchange(unsigned char *message, uint16_t size);
 void clean_client_hello(ClientHello message);
 void clean_server_hello(ServerHello message);
 int is_valid_tls_version(unsigned char major, unsigned char minor);
+unsigned char* get_safe_input_file(char *path, int *file_size);
+void fclose_safe(FILE * stream);
 void handle_errors(int error_code);
