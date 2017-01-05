@@ -480,9 +480,11 @@ unsigned char* get_safe_input_file(char *path, int *file_size) {
     FILE *stream;
     stream = fopen(path, "rb");
 
-    if (stream == NULL) {
+    if (stream != NULL) {
+	continue;
+    }
+    else{
         printf("The file '%s' couldn't be opened.\n", path);
-
         return NULL;
     }
 
