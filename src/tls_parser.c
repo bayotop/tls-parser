@@ -125,7 +125,7 @@ void print_tls_record_layer_info(HandshakeMessage *tls_message) {
     printf("Identified the following TLS message:\n\n");
     printf("TLS Version: ");
 
-    print_tls_version(tls_message.version.minor);
+    print_tls_version(tls_message->version.minor);
 
     printf("Protocol type: %d\n", tls_message->cType);
     printf("Fragment length: %d\n", tls_message->fLength);
