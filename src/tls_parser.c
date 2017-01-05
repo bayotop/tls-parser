@@ -221,7 +221,10 @@ void print_client_hello_message(ClientHello *message, int extensions_length) {
     // Time in human-readable format
     time_t raw_time = (time_t) message->random.time;
     struct tm *timeinfo = localtime(&raw_time);
-    printf ("Timestamp: %s", asctime(timeinfo));
+    char buf[25];
+
+    strftime(buf, 25, "Timestamp: %c.", timeinfo);
+    puts(buf);
 
     printf("Random data: ");
     int i;
@@ -473,7 +476,7 @@ unsigned char* get_safe_input_file(char *path, int *file_size) {
     FILE *stream;
     stream = fopen(path, "rb");
 
-    if (stream != NULL) {
+    if (stream == NULL) {
         printf("The file '%s' couldn't be opened.\n", path);
         return NULL;
     }
