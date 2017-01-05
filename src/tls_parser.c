@@ -7,7 +7,7 @@
 #define MAXIMUM_FILE_SIZE 20000000 // bytes => 20 MB
 
 int main(int argc, char* argv[]) {
-    int err;
+    int err = 0;
 
     // Check command line parameters and print usages in case they are not valid
     if (argc != 2) {
@@ -54,8 +54,7 @@ int main(int argc, char* argv[]) {
         case 16:
             err = parse_client_key_exchange(tls_message.body, tls_message.mLength); break;
         default:
-            printf("[ERROR]: Unsupported handshake message type.\n");
-            return 0;
+            err = UNSUPPORTED_MESSAGE_TYPE;
     }
 
     if (tls_message.body) {
@@ -541,6 +540,7 @@ void handle_errors(int error_code) {
         case 1: printf("The lengths specified in the input file are not valid.\n"); break;
         case 2: printf("The input file is not an TLS handshake message.\n"); break;
         case 3: printf("The message is not of a supported version (TLS 1.0 - TLS 1.2).\n"); break;
+        case 4: printf("Unsupported handshake message type.\n"); break;
         default:
             printf("Something truly unexpected happend.\n");
     }
