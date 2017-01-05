@@ -104,6 +104,7 @@ int parse_client_hello(unsigned char *message, uint16_t size);
 void print_client_hello_message(ClientHello *client_hello, int size);
 int parse_server_hello(unsigned char *message, uint16_t size);
 void print_server_hello_message(ServerHello *message, int extensions_length);
+void print_tls_version(uint8_t minor);
 int parse_certificate(uint16_t size);
 int parse_server_key_exchange(uint16_t size);
 int parse_server_hello_done(uint16_t size);

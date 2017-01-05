@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
         case 16:
             err = parse_client_key_exchange(tls_message.body, tls_message.mLength); break;
         default:
-            err = UNSUPPORTED_MESSAGE_TYPE;
+            err = UNSUPPORTED_MESSAGE_TYPE; break;
     }
 
     if (tls_message.body) {
@@ -125,12 +125,7 @@ void print_tls_record_layer_info(HandshakeMessage *tls_message) {
     printf("Identified the following TLS message:\n\n");
     printf("TLS Version: ");
 
-    switch (tls_message->version.minor) {
-        case 0x01: printf("1.0\n"); break;
-        case 0x02: printf("1.1\n"); break;
-        case 0x03: printf("1.2\n"); break;
-        default: printf("unknown\n");
-    }
+    print_tls_version(tls_message.version.minor);
 
     printf("Protocol type: %d\n", tls_message->cType);
     printf("Fragment length: %d\n", tls_message->fLength);
@@ -221,12 +216,7 @@ void print_client_hello_message(ClientHello *message, int extensions_length) {
     printf("Details of ClientHello:\n\n");
     printf("TLS Version: ");
 
-    switch (message->version.minor) {
-        case 0x01: printf("1.0\n"); break;
-        case 0x02: printf("1.1\n"); break;
-        case 0x03: printf("1.2\n"); break;
-        default: printf("unknown\n");
-    }
+    print_tls_version(message->version.minor);
 
     // Time in human-readable format
     time_t raw_time = (time_t) message->random.time;
@@ -341,12 +331,7 @@ void print_server_hello_message(ServerHello *message, int extensions_length) {
     printf("Details of ServerHello:\n\n");
     printf("TLS Version: ");
 
-    switch (message->version.minor) {
-        case 0x01: printf("1.0\n"); break;
-        case 0x02: printf("1.1\n"); break;
-        case 0x03: printf("1.2\n"); break;
-        default: printf("unknown\n");
-    }
+    print_tls_version(message->version.minor);
 
     // Time in human-readable format
     time_t raw_time = (time_t) message->random.time;
@@ -387,6 +372,15 @@ void print_server_hello_message(ServerHello *message, int extensions_length) {
     } 
 
     printf("\n");
+}
+
+void print_tls_version(uint8_t minor) {
+    switch (minor) {
+        case 0x01: printf("1.0\n"); break;
+        case 0x02: printf("1.1\n"); break;
+        case 0x03: printf("1.2\n"); break;
+        default: printf("unknown\n"); break;
+    }
 }
 
 int parse_certificate(uint16_t size) {
@@ -480,9 +474,6 @@ unsigned char* get_safe_input_file(char *path, int *file_size) {
     stream = fopen(path, "rb");
 
     if (stream != NULL) {
-	continue;
-    }
-    else{
         printf("The file '%s' couldn't be opened.\n", path);
         return NULL;
     }
@@ -542,7 +533,7 @@ void handle_errors(int error_code) {
         case 3: printf("The message is not of a supported version (TLS 1.0 - TLS 1.2).\n"); break;
         case 4: printf("Unsupported handshake message type.\n"); break;
         default:
-            printf("Something truly unexpected happend.\n");
+            printf("Something truly unexpected happend.\n"); break;
     }
 
     exit(0);
