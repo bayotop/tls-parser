@@ -425,7 +425,7 @@ int parse_client_key_exchange(unsigned char *message, uint16_t size) {
     uint8_t length = message[0];
 
     if (length != size - 1) {
-        return INVALID_FILE_LENGTH;
+        return INVALID_FILE_LENGTH_FOR_CLIENT_KEY_EXCHANGE;
     }
 
     printf("The key exchange parameters provided are %d bytes long.\n", size);
