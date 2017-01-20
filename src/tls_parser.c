@@ -535,6 +535,7 @@ void handle_errors(int error_code) {
         case 2: printf("The input file is not an TLS handshake message.\n"); break;
         case 3: printf("The message is not of a supported version (TLS 1.0 - TLS 1.2).\n"); break;
         case 4: printf("Unsupported handshake message type.\n"); break;
+	case 5: printf("The lengths specified in the input file are not valid for client_key_exchange message.\n"); break;
         default:
             printf("Something truly unexpected happend.\n"); break;
     }
