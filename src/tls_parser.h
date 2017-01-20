@@ -11,6 +11,7 @@
 #define INVALID_CONTENT_TYPE 2
 #define INVALID_VERSION 3
 #define UNSUPPORTED_MESSAGE_TYPE 4
+#define INVALID_FILE_LENGTH_FOR_CLIENT_KEY_EXCHANGE 5
 
 typedef struct {
     uint8_t major;
